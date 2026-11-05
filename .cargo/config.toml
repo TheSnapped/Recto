@@ -1,0 +1,17 @@
+# Link the C runtime statically so recto.exe doesn't need VCRUNTIME140.dll.
+# MuPDF (built from source by mupdf-sys) follows this and uses the static runtime too.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# mupdf-sys generates its bindings with libclang (LLVM).
+[env]
+LIBCLANG_PATH = 'C:/Program Files/LLVM/bin'
+# mupdf-sys's small C wrapper uses C23 syntax that older MSVC versions reject;
+# clang-cl (part of LLVM) compiles it. MuPDF itself is still built with MSVC.
+CC_x86_64_pc_windows_msvc = 'C:/Program Files/LLVM/bin/clang-cl.exe'
+# mupdf-sys 0.8.0 builds MuPDF for the DLL runtime (/MD) even with crt-static. MSBuild
+# imports this props file into MuPDF's projects, switching them to the static runtime.
+ForceImportAfterCppTargets = { value = "build/static-crt.props", relative = true }
+# Function-level linking for that wrapper, so unused wrapper functions (and the HTML,
+# EPUB and hyphenation code they would pull in) are left out of the exe.
+CFLAGS_x86_64_pc_windows_msvc = '/Gy'
